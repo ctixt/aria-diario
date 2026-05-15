@@ -5,5 +5,6 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 console.log("SUPABASE URL:", supabaseUrl);
 console.log("SUPABASE KEY EXISTE:", !!supabaseKey);
+console.log("SUPABASE KEY:", supabaseKey);
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
