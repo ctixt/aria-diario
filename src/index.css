@@ -109,3 +109,39 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  background: #f8fafc;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  max-width: 100%;
+}
+
+textarea {
+  width: 100%;
+}
+
+img,
+svg {
+  max-width: 100%;
+}

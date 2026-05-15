@@ -45,7 +45,7 @@ function Dashboard() {
     };
   }, []);
 
-  const isMobile = screenWidth <= 820;
+  const isMobile = screenWidth <= 900;
   const isSmall = screenWidth <= 480;
 
   const [profile, setProfile] = useState(null);
@@ -136,6 +136,8 @@ function Dashboard() {
   const styles = {
     page: {
       minHeight: "100vh",
+      width: "100%",
+      maxWidth: "100vw",
       background:
         "radial-gradient(circle at 12% 12%, rgba(124, 58, 237, 0.11), transparent 28%), radial-gradient(circle at 88% 16%, rgba(236, 72, 153, 0.10), transparent 24%), linear-gradient(135deg, #f8fafc 0%, #ffffff 52%, #fff7ed 100%)",
       color: "#111827",
@@ -148,8 +150,9 @@ function Dashboard() {
     },
     appShell: {
       width: "100%",
-      maxWidth: "1360px",
+      maxWidth: isMobile ? "100%" : "1360px",
       margin: "0 auto",
+      overflowX: "hidden",
       display: isMobile ? "block" : "grid",
       gridTemplateColumns: "260px minmax(0, 1fr)",
       gap: "18px",
@@ -172,8 +175,13 @@ function Dashboard() {
     main: {
       minWidth: 0,
       width: "100%",
+      maxWidth: "100%",
+      overflowX: "hidden",
     },
     topbar: {
+      width: "100%",
+      maxWidth: "100%",
+      overflow: "hidden",
       display: "flex",
       alignItems: isMobile ? "flex-start" : "center",
       justifyContent: "space-between",
@@ -191,6 +199,8 @@ function Dashboard() {
       display: "flex",
       alignItems: "center",
       gap: "12px",
+      minWidth: 0,
+      maxWidth: "100%",
     },
     logoIcon: {
       width: isSmall ? "40px" : "46px",
@@ -206,9 +216,11 @@ function Dashboard() {
     },
     logoTitle: {
       margin: 0,
-      fontSize: isSmall ? "22px" : "26px",
-      letterSpacing: "-1.2px",
+      fontSize: isSmall ? "20px" : isMobile ? "22px" : "26px",
+      letterSpacing: isMobile ? "-0.7px" : "-1.2px",
       color: "#111827",
+      lineHeight: 1.15,
+      overflowWrap: "anywhere",
     },
     logoSub: {
       margin: 0,
@@ -220,6 +232,9 @@ function Dashboard() {
       animation: "softIn 0.28s ease both",
     },
     card: {
+      width: "100%",
+      maxWidth: "100%",
+      overflowWrap: "anywhere",
       background: "rgba(255,255,255,0.9)",
       border: "1px solid rgba(226,232,240,0.95)",
       borderRadius: isSmall ? "20px" : isMobile ? "22px" : "30px",
@@ -228,6 +243,9 @@ function Dashboard() {
       backdropFilter: "blur(18px)",
     },
     compactCard: {
+      width: "100%",
+      maxWidth: "100%",
+      overflowWrap: "anywhere",
       background: "#ffffff",
       border: "1px solid #eef2f7",
       borderRadius: isSmall ? "18px" : "24px",
@@ -235,6 +253,9 @@ function Dashboard() {
       boxShadow: "0 14px 34px rgba(15,23,42,0.05)",
     },
     hero: {
+      width: "100%",
+      maxWidth: "100%",
+      overflowWrap: "anywhere",
       position: "relative",
       overflow: "hidden",
       borderRadius: isSmall ? "22px" : isMobile ? "26px" : "34px",
@@ -376,7 +397,8 @@ function Dashboard() {
       color: "#64748b",
       fontSize: "13px",
       fontWeight: "750",
-      whiteSpace: "nowrap",
+      whiteSpace: isSmall ? "normal" : "nowrap",
+      maxWidth: "100%",
     },
     logoutButton: {
       border: "1px solid #fecdd3",
@@ -418,7 +440,7 @@ function Dashboard() {
     },
     modalCard: {
       width: "100%",
-      maxWidth: isMobile ? "92%" : "430px",
+      maxWidth: isMobile ? "calc(100vw - 32px)" : "430px",
       background: "rgba(255,255,255,0.96)",
       border: "1px solid rgba(255,255,255,0.9)",
       borderRadius: "28px",
@@ -1390,9 +1412,45 @@ Haz un análisis útil, natural y personalizado.
   };
 
   return (
-    <div style={styles.page}>
+    <div className="aria-page" style={styles.page}>
       <style>
         {`
+          *, *::before, *::after {
+            box-sizing: border-box;
+          }
+
+          html, body, #root {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+          }
+
+          body {
+            background: #f8fafc;
+          }
+
+          button, input, textarea, select {
+            font-family: inherit;
+            max-width: 100%;
+          }
+
+          textarea {
+            width: 100%;
+          }
+
+          .aria-page {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+          }
+
+          .aria-page * {
+            min-width: 0;
+          }
+
           @keyframes softIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -1580,6 +1638,7 @@ Haz un análisis útil, natural y personalizado.
                 gap: "8px",
                 flexWrap: "wrap",
                 width: isMobile ? "100%" : "auto",
+                maxWidth: "100%",
               }}
             >
               <span
@@ -2292,8 +2351,8 @@ Haz un análisis útil, natural y personalizado.
             onClick={() => setActivePanel(item.key)}
             style={{
               border: "none",
-              borderRadius: "18px",
-              padding: "10px 6px",
+              borderRadius: isSmall ? "14px" : "18px",
+              padding: isSmall ? "8px 2px" : "10px 6px",
               background:
                 activePanel === item.key
                   ? "linear-gradient(135deg, #7c3aed, #ec4899)"
