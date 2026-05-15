@@ -27,14 +27,14 @@ function Dashboard() {
   const [conversationSearch, setConversationSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth <= 768;
+  const [screenWidth, setScreenWidth] = useState(() => {
+    if (typeof window === "undefined") return 1200;
+    return window.innerWidth;
   });
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
+      setScreenWidth(window.innerWidth);
     };
 
     handleResize();
@@ -44,6 +44,9 @@ function Dashboard() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  const isMobile = screenWidth <= 820;
+  const isSmall = screenWidth <= 480;
 
   const [profile, setProfile] = useState(null);
 
@@ -136,19 +139,19 @@ function Dashboard() {
       background:
         "radial-gradient(circle at 12% 12%, rgba(124, 58, 237, 0.11), transparent 28%), radial-gradient(circle at 88% 16%, rgba(236, 72, 153, 0.10), transparent 24%), linear-gradient(135deg, #f8fafc 0%, #ffffff 52%, #fff7ed 100%)",
       color: "#111827",
-      padding: isMobile ? "14px" : "22px",
+      padding: isSmall ? "10px" : isMobile ? "12px" : "22px",
       fontFamily:
         "Inter, Poppins, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
       position: "relative",
       overflowX: "hidden",
-      paddingBottom: isMobile ? "92px" : "22px",
+      paddingBottom: isMobile ? "calc(88px + env(safe-area-inset-bottom))" : "22px",
     },
     appShell: {
       width: "100%",
       maxWidth: "1360px",
       margin: "0 auto",
       display: isMobile ? "block" : "grid",
-      gridTemplateColumns: "270px minmax(0, 1fr)",
+      gridTemplateColumns: "260px minmax(0, 1fr)",
       gap: "18px",
       position: "relative",
       zIndex: 2,
@@ -168,6 +171,7 @@ function Dashboard() {
     },
     main: {
       minWidth: 0,
+      width: "100%",
     },
     topbar: {
       display: "flex",
@@ -175,9 +179,9 @@ function Dashboard() {
       justifyContent: "space-between",
       gap: "14px",
       flexWrap: "wrap",
-      marginBottom: "16px",
-      padding: isMobile ? "16px" : "18px 20px",
-      borderRadius: isMobile ? "24px" : "28px",
+      marginBottom: isMobile ? "12px" : "16px",
+      padding: isSmall ? "12px" : isMobile ? "14px" : "18px 20px",
+      borderRadius: isSmall ? "20px" : isMobile ? "22px" : "28px",
       background: "rgba(255,255,255,0.82)",
       border: "1px solid rgba(226,232,240,0.95)",
       boxShadow: "0 18px 50px rgba(15,23,42,0.06)",
@@ -189,8 +193,8 @@ function Dashboard() {
       gap: "12px",
     },
     logoIcon: {
-      width: "46px",
-      height: "46px",
+      width: isSmall ? "40px" : "46px",
+      height: isSmall ? "40px" : "46px",
       borderRadius: "16px",
       background: "linear-gradient(135deg, #7c3aed, #ec4899)",
       color: "#ffffff",
@@ -202,15 +206,15 @@ function Dashboard() {
     },
     logoTitle: {
       margin: 0,
-      fontSize: "26px",
+      fontSize: isSmall ? "22px" : "26px",
       letterSpacing: "-1.2px",
       color: "#111827",
     },
     logoSub: {
       margin: 0,
       color: "#64748b",
-      fontSize: "13px",
-      lineHeight: 1.4,
+      fontSize: isSmall ? "12px" : "13px",
+      lineHeight: 1.35,
     },
     panel: {
       animation: "softIn 0.28s ease both",
@@ -218,23 +222,23 @@ function Dashboard() {
     card: {
       background: "rgba(255,255,255,0.9)",
       border: "1px solid rgba(226,232,240,0.95)",
-      borderRadius: isMobile ? "24px" : "30px",
-      padding: isMobile ? "18px" : "24px",
+      borderRadius: isSmall ? "20px" : isMobile ? "22px" : "30px",
+      padding: isSmall ? "14px" : isMobile ? "16px" : "24px",
       boxShadow: "0 20px 55px rgba(15,23,42,0.07)",
       backdropFilter: "blur(18px)",
     },
     compactCard: {
       background: "#ffffff",
       border: "1px solid #eef2f7",
-      borderRadius: "24px",
-      padding: isMobile ? "16px" : "18px",
+      borderRadius: isSmall ? "18px" : "24px",
+      padding: isSmall ? "13px" : isMobile ? "15px" : "18px",
       boxShadow: "0 14px 34px rgba(15,23,42,0.05)",
     },
     hero: {
       position: "relative",
       overflow: "hidden",
-      borderRadius: isMobile ? "28px" : "34px",
-      padding: isMobile ? "24px" : "34px",
+      borderRadius: isSmall ? "22px" : isMobile ? "26px" : "34px",
+      padding: isSmall ? "18px" : isMobile ? "22px" : "34px",
       background:
         "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(236,72,153,0.86)), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.28), transparent 28%)",
       color: "#ffffff",
@@ -243,9 +247,9 @@ function Dashboard() {
     },
     heroTitle: {
       margin: "8px 0 12px",
-      fontSize: isMobile ? "31px" : "44px",
+      fontSize: isSmall ? "24px" : isMobile ? "28px" : "44px",
       lineHeight: "1.05",
-      letterSpacing: isMobile ? "-1px" : "-2px",
+      letterSpacing: isMobile ? "-0.8px" : "-2px",
       maxWidth: "760px",
     },
     heroText: {
@@ -253,29 +257,31 @@ function Dashboard() {
       maxWidth: "690px",
       color: "rgba(255,255,255,0.88)",
       lineHeight: 1.7,
-      fontSize: isMobile ? "15px" : "16px",
+      fontSize: isSmall ? "14px" : isMobile ? "15px" : "16px",
     },
     grid2: {
       display: "grid",
-      gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 370px",
+      gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) 370px",
       gap: "18px",
       alignItems: "start",
     },
     gridGlobal: {
       display: "grid",
-      gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 300px",
+      gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) 300px",
       gap: "18px",
       alignItems: "start",
     },
     statGrid: {
       display: "grid",
-      gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+      gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))",
       gap: "14px",
       marginBottom: "18px",
     },
     moodGrid: {
       display: "grid",
-      gridTemplateColumns: isMobile
+      gridTemplateColumns: isSmall
+        ? "minmax(0, 1fr)"
+        : isMobile
         ? "repeat(2, minmax(0, 1fr))"
         : "repeat(5, minmax(0, 1fr))",
       gap: "12px",
@@ -290,12 +296,12 @@ function Dashboard() {
     },
     textarea: {
       width: "100%",
-      minHeight: isMobile ? "116px" : "136px",
+      minHeight: isSmall ? "100px" : isMobile ? "110px" : "136px",
       borderRadius: "22px",
       border: "1px solid #e5e7eb",
       background: "#ffffff",
       color: "#111827",
-      padding: "16px",
+      padding: isSmall ? "13px" : "16px",
       outline: "none",
       resize: "vertical",
       fontSize: "15px",
@@ -316,8 +322,8 @@ function Dashboard() {
     },
     button: {
       border: "none",
-      borderRadius: "16px",
-      padding: "13px 18px",
+      borderRadius: isSmall ? "14px" : "16px",
+      padding: isSmall ? "12px 14px" : "13px 18px",
       cursor: loading ? "not-allowed" : "pointer",
       fontWeight: "850",
       background: "linear-gradient(135deg, #7c3aed, #ec4899)",
@@ -329,8 +335,8 @@ function Dashboard() {
     },
     orangeButton: {
       border: "none",
-      borderRadius: "16px",
-      padding: "13px 18px",
+      borderRadius: isSmall ? "14px" : "16px",
+      padding: isSmall ? "12px 14px" : "13px 18px",
       cursor: loading ? "not-allowed" : "pointer",
       fontWeight: "850",
       background: "linear-gradient(135deg, #fb923c, #f97316)",
@@ -387,17 +393,17 @@ function Dashboard() {
       display: isMobile ? "grid" : "none",
       gridTemplateColumns: "repeat(4, 1fr)",
       position: "fixed",
-      left: "12px",
-      right: "12px",
-      bottom: "12px",
+      left: isSmall ? "8px" : "12px",
+      right: isSmall ? "8px" : "12px",
+      bottom: "calc(8px + env(safe-area-inset-bottom))",
       zIndex: 5000,
-      padding: "8px",
-      borderRadius: "24px",
+      padding: isSmall ? "6px" : "8px",
+      borderRadius: isSmall ? "20px" : "24px",
       background: "rgba(255,255,255,0.92)",
       border: "1px solid rgba(226,232,240,0.95)",
       boxShadow: "0 20px 55px rgba(15,23,42,0.18)",
       backdropFilter: "blur(18px)",
-      gap: "6px",
+      gap: isSmall ? "4px" : "6px",
     },
     modalOverlay: {
       position: "fixed",
@@ -429,9 +435,9 @@ function Dashboard() {
       color: "#e11d48",
       display: "grid",
       placeItems: "center",
-      fontSize: "26px",
+      fontSize: isSmall ? "22px" : "26px",
       fontWeight: "900",
-      marginBottom: "16px",
+      marginBottom: isMobile ? "12px" : "16px",
     },
     modalTitle: {
       margin: "0 0 8px",
@@ -1571,7 +1577,7 @@ Haz un análisis útil, natural y personalizado.
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "8px",
                 flexWrap: "wrap",
                 width: isMobile ? "100%" : "auto",
               }}
@@ -1587,16 +1593,21 @@ Haz un análisis útil, natural y personalizado.
                 {getMoodText()}
               </span>
 
-              <span style={styles.label}>Entradas: {stats.entries}</span>
-              <span style={styles.label}>Chats: {stats.conversations}</span>
+              <span style={{ ...styles.label, display: isMobile ? "none" : "inline-flex" }}>Entradas: {stats.entries}</span>
+              <span style={{ ...styles.label, display: isMobile ? "none" : "inline-flex" }}>Chats: {stats.conversations}</span>
 
               <button
                 type="button"
                 onClick={openLogoutModal}
-                style={styles.logoutButton}
+                style={{
+                  ...styles.logoutButton,
+                  width: isMobile ? "auto" : "auto",
+                  marginLeft: isMobile ? "auto" : 0,
+                  padding: isSmall ? "9px 12px" : "10px 16px",
+                }}
                 disabled={loading}
               >
-                Cerrar sesión
+                {isSmall ? "Salir" : "Cerrar sesión"}
               </button>
             </div>
           </header>
@@ -1604,7 +1615,7 @@ Haz un análisis útil, natural y personalizado.
           {loading && (
             <div
               style={{
-                marginBottom: "16px",
+                marginBottom: isMobile ? "12px" : "16px",
                 padding: "14px 16px",
                 borderRadius: "18px",
                 background: "#fff7ed",
@@ -1646,10 +1657,11 @@ Haz un análisis útil, natural y personalizado.
 
                 <div
                   style={{
-                    marginTop: "22px",
+                    marginTop: isSmall ? "16px" : "22px",
                     display: "flex",
                     gap: "10px",
                     flexWrap: "wrap",
+                    flexDirection: isSmall ? "column" : "row",
                   }}
                 >
                   <button
@@ -1674,6 +1686,7 @@ Haz un análisis útil, natural y personalizado.
                       background: "rgba(255,255,255,0.12)",
                       color: "#ffffff",
                       border: "1px solid rgba(255,255,255,0.28)",
+                      width: isMobile ? "100%" : "auto",
                     }}
                     onClick={() => setActivePanel("global")}
                   >
@@ -1753,7 +1766,7 @@ Haz un análisis útil, natural y personalizado.
                     gap: "14px",
                     flexWrap: "wrap",
                     alignItems: "center",
-                    marginBottom: "16px",
+                    marginBottom: isMobile ? "12px" : "16px",
                   }}
                 >
                   <div>
@@ -2291,10 +2304,10 @@ Haz un análisis útil, natural y personalizado.
               display: "grid",
               gap: "2px",
               placeItems: "center",
-              fontSize: "12px",
+              fontSize: isSmall ? "11px" : "12px",
             }}
           >
-            <span style={{ fontSize: "18px", lineHeight: 1 }}>{item.icon}</span>
+            <span style={{ fontSize: isSmall ? "16px" : "18px", lineHeight: 1 }}>{item.icon}</span>
             {item.label}
           </button>
         ))}
