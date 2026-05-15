@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../components/useToast";
@@ -8,93 +8,178 @@ function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { showToast } = useToast();
+  const [screenWidth, setScreenWidth] = useState(() => {
+    if (typeof window === "undefined") return 1200;
+    return window.innerWidth;
+  });
 
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  const isMobile = screenWidth <= 820;
+  const isSmall = screenWidth <= 480;
+
   const handleLogin = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!email.trim() || !password.trim()) {
-    showToast("Por favor ingresa tu correo y contraseña", "warning");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      showToast("Correo o contraseña incorrectos", "error");
+    if (!email.trim() || !password.trim()) {
+      showToast("Por favor ingresa tu correo y contraseña", "warning");
       return;
     }
 
-    showToast("Inicio de sesión correcto", "success");
+    try {
+      setLoading(true);
 
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 600);
-  } catch (error) {
-    console.log("Error en login:", error);
-    showToast("Ocurrió un error al iniciar sesión", "error");
-  } finally {
-    setLoading(false);
-  }
-};
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        showToast("Correo o contraseña incorrectos", "error");
+        return;
+      }
+
+      showToast("Inicio de sesión correcto", "success");
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 600);
+    } catch (error) {
+      console.log("Error en login:", error);
+      showToast("Ocurrió un error al iniciar sesión", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const styles = {
     page: {
       minHeight: "100vh",
+      width: "100%",
+      maxWidth: "100vw",
       background:
-        "radial-gradient(circle at 15% 20%, #f5d0fe 0, transparent 28%), radial-gradient(circle at 85% 15%, #fed7aa 0, transparent 24%), linear-gradient(135deg, #ffffff 0%, #faf7ff 46%, #fff7ed 100%)",
+        "radial-gradient(circle at 12% 12%, rgba(245, 208, 254, 0.95) 0, transparent 30%), radial-gradient(circle at 88% 18%, rgba(254, 215, 170, 0.9) 0, transparent 28%), linear-gradient(135deg, #ffffff 0%, #faf7ff 48%, #fff7ed 100%)",
       display: "grid",
       placeItems: "center",
-      padding: "28px",
+      padding: isSmall ? "14px" : isMobile ? "18px" : "28px",
       fontFamily:
         "Inter, Poppins, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
       position: "relative",
-      overflow: "hidden",
+      overflowX: "hidden",
       color: "#172033",
+      boxSizing: "border-box",
     },
+    reset: `
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body,
+      #root {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+
+      input,
+      button {
+        font-family: inherit;
+        max-width: 100%;
+      }
+
+      @keyframes softIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes floatOrb {
+        0%, 100% {
+          transform: translateY(0) rotate(-10deg);
+        }
+        50% {
+          transform: translateY(-10px) rotate(-6deg);
+        }
+      }
+
+      .login-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 38px rgba(139, 92, 246, 0.30);
+      }
+
+      .soft-button:hover {
+        background: #f8fafc;
+      }
+    `,
     blobOne: {
       position: "absolute",
-      width: "430px",
-      height: "430px",
+      width: isMobile ? "260px" : "430px",
+      height: isMobile ? "260px" : "430px",
       borderRadius: "44% 56% 61% 39%",
       background:
-        "linear-gradient(135deg, rgba(139,92,246,0.22), rgba(236,72,153,0.16), rgba(254,215,170,0.25))",
-      top: "80px",
-      left: "-150px",
+        "linear-gradient(135deg, rgba(139,92,246,0.20), rgba(236,72,153,0.14), rgba(254,215,170,0.24))",
+      top: isMobile ? "-80px" : "80px",
+      left: isMobile ? "-120px" : "-150px",
       filter: "blur(2px)",
       zIndex: 0,
+      pointerEvents: "none",
     },
     blobTwo: {
       position: "absolute",
-      width: "380px",
-      height: "380px",
+      width: isMobile ? "240px" : "380px",
+      height: isMobile ? "240px" : "380px",
       borderRadius: "55% 45% 37% 63%",
       background:
-        "linear-gradient(135deg, rgba(251,146,60,0.18), rgba(168,85,247,0.16))",
-      right: "-120px",
-      bottom: "80px",
+        "linear-gradient(135deg, rgba(251,146,60,0.16), rgba(168,85,247,0.14))",
+      right: isMobile ? "-120px" : "-120px",
+      bottom: isMobile ? "-70px" : "80px",
       filter: "blur(1px)",
       zIndex: 0,
+      pointerEvents: "none",
     },
     container: {
       width: "100%",
-      maxWidth: "1080px",
+      maxWidth: isMobile ? "460px" : "1080px",
       display: "grid",
-      gridTemplateColumns: "1fr 430px",
-      gap: "36px",
+      gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) 430px",
+      gap: isMobile ? "16px" : "36px",
       alignItems: "center",
       position: "relative",
       zIndex: 2,
+      animation: "softIn 0.35s ease both",
+    },
+    mobileBrand: {
+      display: isMobile ? "flex" : "none",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "12px",
+      marginBottom: "2px",
+      padding: "6px 0",
     },
     heroCard: {
+      display: isMobile ? "none" : "block",
       minHeight: "560px",
       borderRadius: "36px",
       padding: "46px",
@@ -106,12 +191,17 @@ function Login() {
       overflow: "hidden",
     },
     loginCard: {
-      background: "rgba(255, 255, 255, 0.88)",
-      border: "1px solid rgba(226, 232, 240, 0.9)",
-      borderRadius: "32px",
-      padding: "34px",
-      boxShadow: "0 24px 70px rgba(15, 23, 42, 0.12)",
+      width: "100%",
+      maxWidth: "100%",
+      background: "rgba(255, 255, 255, 0.9)",
+      border: "1px solid rgba(226, 232, 240, 0.92)",
+      borderRadius: isSmall ? "24px" : isMobile ? "28px" : "32px",
+      padding: isSmall ? "22px" : isMobile ? "26px" : "34px",
+      boxShadow: isMobile
+        ? "0 22px 55px rgba(15, 23, 42, 0.11)"
+        : "0 24px 70px rgba(15, 23, 42, 0.12)",
       backdropFilter: "blur(18px)",
+      boxSizing: "border-box",
     },
     logo: {
       display: "inline-flex",
@@ -120,16 +210,17 @@ function Login() {
       marginBottom: "34px",
     },
     logoIcon: {
-      width: "48px",
-      height: "48px",
-      borderRadius: "18px",
+      width: isSmall ? "42px" : "48px",
+      height: isSmall ? "42px" : "48px",
+      borderRadius: isSmall ? "16px" : "18px",
       background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
       boxShadow: "0 14px 28px rgba(139,92,246,0.25)",
       display: "grid",
       placeItems: "center",
       color: "#ffffff",
       fontWeight: "900",
-      fontSize: "20px",
+      fontSize: isSmall ? "18px" : "20px",
+      flexShrink: 0,
     },
     title: {
       fontSize: "48px",
@@ -151,6 +242,7 @@ function Login() {
       bottom: "34px",
       width: "300px",
       height: "300px",
+      pointerEvents: "none",
     },
     mainOrb: {
       position: "absolute",
@@ -163,6 +255,7 @@ function Login() {
       transform: "rotate(-12deg)",
       left: "35px",
       top: "35px",
+      animation: "floatOrb 5s ease-in-out infinite",
     },
     smallOrb: {
       position: "absolute",
@@ -185,15 +278,19 @@ function Login() {
       bottom: "48px",
     },
     formTitle: {
-      fontSize: "30px",
+      fontSize: isSmall ? "26px" : isMobile ? "28px" : "30px",
       margin: "0 0 8px",
       letterSpacing: "-1px",
       color: "#111827",
+      lineHeight: "1.12",
+      textAlign: isMobile ? "center" : "left",
     },
     formText: {
       color: "#64748b",
-      margin: "0 0 28px",
+      margin: "0 0 26px",
       lineHeight: "1.6",
+      textAlign: isMobile ? "center" : "left",
+      fontSize: isSmall ? "14px" : "15px",
     },
     label: {
       display: "block",
@@ -203,14 +300,14 @@ function Login() {
       marginBottom: "8px",
     },
     inputGroup: {
-      marginBottom: "18px",
+      marginBottom: "17px",
     },
     input: {
       width: "100%",
       border: "1px solid #e5e7eb",
       background: "#ffffff",
       borderRadius: "18px",
-      padding: "15px 16px",
+      padding: isSmall ? "14px 15px" : "15px 16px",
       fontSize: "15px",
       color: "#111827",
       outline: "none",
@@ -219,6 +316,7 @@ function Login() {
     },
     passwordWrap: {
       position: "relative",
+      width: "100%",
     },
     showButton: {
       position: "absolute",
@@ -231,26 +329,31 @@ function Login() {
       fontWeight: "800",
       borderRadius: "12px",
       padding: "8px 10px",
-      cursor: "pointer",
+      cursor: loading ? "not-allowed" : "pointer",
     },
     submitButton: {
       width: "100%",
       border: "none",
       borderRadius: "18px",
       padding: "15px 18px",
-      cursor: "pointer",
+      cursor: loading ? "not-allowed" : "pointer",
       fontWeight: "900",
       fontSize: "15px",
-      background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+      background: loading
+        ? "linear-gradient(135deg, #c4b5fd, #f9a8d4)"
+        : "linear-gradient(135deg, #8b5cf6, #ec4899)",
       color: "#ffffff",
-      marginTop: "10px",
+      marginTop: "8px",
       boxShadow: "0 16px 32px rgba(139, 92, 246, 0.28)",
+      opacity: loading ? 0.82 : 1,
+      transition: "transform .18s ease, box-shadow .18s ease",
     },
     secondaryText: {
       textAlign: "center",
       marginTop: "22px",
       color: "#64748b",
       fontSize: "14px",
+      lineHeight: "1.6",
     },
     link: {
       color: "#8b5cf6",
@@ -270,14 +373,35 @@ function Login() {
       fontWeight: "900",
       marginBottom: "18px",
     },
+    mobileHint: {
+      display: isMobile ? "block" : "none",
+      margin: "16px auto 0",
+      maxWidth: "330px",
+      textAlign: "center",
+      color: "#64748b",
+      fontSize: "13px",
+      lineHeight: "1.55",
+    },
   };
 
   return (
     <div style={styles.page}>
+      <style>{styles.reset}</style>
+
       <div style={styles.blobOne}></div>
       <div style={styles.blobTwo}></div>
 
       <div style={styles.container}>
+        <div style={styles.mobileBrand}>
+          <div style={styles.logoIcon}>A</div>
+          <div>
+            <strong style={{ color: "#111827", fontSize: "18px" }}>ARIA</strong>
+            <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
+              Diario emocional inteligente
+            </p>
+          </div>
+        </div>
+
         <section style={styles.heroCard}>
           <div style={styles.logo}>
             <div style={styles.logoIcon}>A</div>
@@ -351,6 +475,8 @@ function Login() {
                 placeholder="tu_correo@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                autoComplete="email"
               />
             </div>
 
@@ -367,19 +493,27 @@ function Login() {
                   placeholder="Ingresa tu contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  autoComplete="current-password"
                 />
 
                 <button
                   type="button"
                   style={styles.showButton}
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                 >
                   {showPassword ? "Ocultar" : "Ver"}
                 </button>
               </div>
             </div>
 
-            <button type="submit" style={styles.submitButton} disabled={loading}>
+            <button
+              type="submit"
+              className="login-button"
+              style={styles.submitButton}
+              disabled={loading}
+            >
               {loading ? "Ingresando..." : "Iniciar sesión →"}
             </button>
           </form>
@@ -389,6 +523,11 @@ function Login() {
             <Link to="/register" style={styles.link}>
               Crear cuenta
             </Link>
+          </p>
+
+          <p style={styles.mobileHint}>
+            Tus entradas y conversaciones se guardan en un espacio privado para
+            que puedas retomarlas cuando quieras.
           </p>
         </section>
       </div>
