@@ -4,6 +4,9 @@ import groq from "../lib/groq";
 import { useToast } from "../components/useToast";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
 function Dashboard() {
   const { showToast } = useToast();
@@ -1613,6 +1616,40 @@ Haz un análisis útil, natural y personalizado.
     }
   };
 
+  const savePdfFile = async (doc, fileName) => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const pdfBase64 = doc.output("datauristring").split(",")[1];
+
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: pdfBase64,
+          directory: Directory.Cache,
+          recursive: true,
+        });
+
+        await Share.share({
+          title: "Reporte ARIA",
+          text: "Reporte estadístico generado por ARIA.",
+          url: savedFile.uri,
+          dialogTitle: "Guardar o compartir reporte",
+        });
+
+        return true;
+      } catch (error) {
+        console.log("Error guardando o compartiendo PDF en APK:", error);
+        showToast(
+          "No se pudo abrir el menú para guardar o compartir el PDF",
+          "error"
+        );
+        return false;
+      }
+    }
+
+    doc.save(fileName);
+    return true;
+  };
+
   const generateStatsPDF = async () => {
     const user = await getUser();
 
@@ -1957,8 +1994,11 @@ Recomendación:
         .toLowerCase()
         .replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`;
 
-      doc.save(fileName);
-      showToast("Reporte PDF generado correctamente", "success");
+      const saved = await savePdfFile(doc, fileName);
+
+      if (saved) {
+        showToast("Reporte PDF generado correctamente", "success");
+      }
     } catch (error) {
       console.log("Error generando reporte PDF:", error);
       showToast("No se pudo generar el reporte PDF", "error");
