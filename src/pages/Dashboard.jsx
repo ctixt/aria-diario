@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import groq from "../lib/groq";
 import { useToast } from "../components/useToast";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 function Dashboard() {
   const { showToast } = useToast();
@@ -12,6 +14,8 @@ function Dashboard() {
   const [moodReply, setMoodReply] = useState(
     "Todo bien? ¿Necesitas ayuda en algo o solo quieres escribir un poco?"
   );
+  const [moodSavedToday, setMoodSavedToday] = useState(false);
+  const [lastSavedMoodText, setLastSavedMoodText] = useState("");
 
   const [entryInput, setEntryInput] = useState("");
   const [conversationInput, setConversationInput] = useState("");
@@ -132,6 +136,25 @@ function Dashboard() {
 
   const latestEntry = entries[0] || null;
   const latestConversation = conversations[0] || null;
+
+  const currentHour = new Date().getHours();
+  const greetingText =
+    currentHour < 12
+      ? "Buenos días"
+      : currentHour < 18
+      ? "Buenas tardes"
+      : "Buenas noches";
+
+  const todayLabel = new Date().toLocaleDateString("es-GT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  const activityScore = Math.min(
+    100,
+    Math.round(((entries.length * 2 + conversations.length) / 14) * 100)
+  );
 
   const styles = {
     page: {
@@ -366,6 +389,114 @@ function Dashboard() {
       opacity: loading ? 0.75 : 1,
       width: isMobile ? "100%" : "auto",
     },
+    reportButton: {
+      border: "1px solid #ddd6fe",
+      borderRadius: isSmall ? "14px" : "16px",
+      padding: isSmall ? "12px 14px" : "13px 18px",
+      cursor: loading ? "not-allowed" : "pointer",
+      fontWeight: "850",
+      background: "#ffffff",
+      color: "#7c3aed",
+      boxShadow: "0 14px 30px rgba(124,58,237,0.12)",
+      opacity: loading ? 0.75 : 1,
+      width: isMobile ? "100%" : "auto",
+    },
+    topActionButton: {
+      border: "1px solid #ddd6fe",
+      borderRadius: "999px",
+      padding: isSmall ? "9px 12px" : "10px 14px",
+      cursor: loading ? "not-allowed" : "pointer",
+      fontWeight: "850",
+      background: "linear-gradient(135deg, #ffffff, #faf5ff)",
+      color: "#6d28d9",
+      boxShadow: "0 10px 24px rgba(124,58,237,0.10)",
+      opacity: loading ? 0.75 : 1,
+      whiteSpace: "nowrap",
+    },
+    heroActions: {
+      marginTop: isSmall ? "16px" : "22px",
+      display: "flex",
+      gap: "10px",
+      flexWrap: "wrap",
+      flexDirection: isSmall ? "column" : "row",
+      alignItems: isSmall ? "stretch" : "center",
+    },
+    reportHighlight: {
+      width: "100%",
+      marginBottom: "18px",
+      borderRadius: isSmall ? "20px" : "28px",
+      padding: isSmall ? "16px" : "20px",
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(245,243,255,0.95)), radial-gradient(circle at 90% 12%, rgba(236,72,153,0.12), transparent 30%)",
+      border: "1px solid rgba(221,214,254,0.95)",
+      boxShadow: "0 18px 45px rgba(124,58,237,0.10)",
+      display: "grid",
+      gridTemplateColumns: isMobile ? "1fr" : "56px minmax(0, 1fr) auto",
+      gap: "14px",
+      alignItems: "center",
+    },
+    reportIcon: {
+      width: "52px",
+      height: "52px",
+      borderRadius: "18px",
+      display: "grid",
+      placeItems: "center",
+      background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+      color: "#ffffff",
+      fontSize: "24px",
+      boxShadow: "0 16px 30px rgba(124,58,237,0.24)",
+    },
+    loadingCard: {
+      marginBottom: isMobile ? "12px" : "16px",
+      padding: "14px 16px",
+      borderRadius: "18px",
+      background: "linear-gradient(135deg, #fff7ed, #ffffff)",
+      border: "1px solid #fed7aa",
+      color: "#c2410c",
+      fontWeight: "850",
+      boxShadow: "0 10px 25px rgba(249,115,22,0.08)",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+    },
+    loadingDot: {
+      width: "10px",
+      height: "10px",
+      borderRadius: "999px",
+      background: "#f97316",
+      boxShadow: "0 0 0 6px rgba(249,115,22,0.12)",
+      flexShrink: 0,
+    },
+    insightStrip: {
+      width: "100%",
+      marginBottom: "18px",
+      display: "grid",
+      gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+      gap: "12px",
+    },
+    insightCard: {
+      background: "rgba(255,255,255,0.78)",
+      border: "1px solid rgba(226,232,240,0.92)",
+      borderRadius: isSmall ? "18px" : "22px",
+      padding: isSmall ? "13px" : "16px",
+      boxShadow: "0 14px 34px rgba(15,23,42,0.055)",
+      backdropFilter: "blur(16px)",
+    },
+    progressTrack: {
+      width: "100%",
+      height: "9px",
+      borderRadius: "999px",
+      background: "#ede9fe",
+      overflow: "hidden",
+      marginTop: "10px",
+    },
+    progressFill: {
+      height: "100%",
+      borderRadius: "999px",
+      background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+      width: `${activityScore}%`,
+      transition: "width .45s ease",
+    },
     secondaryButton: {
       border: "1px solid #e5e7eb",
       borderRadius: "16px",
@@ -536,6 +667,19 @@ function Dashboard() {
     return user;
   };
 
+  const getTodayIsoRange = () => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+    };
+  };
+
   const fetchProfile = async () => {
     const user = await getUser();
     if (!user) return;
@@ -652,6 +796,38 @@ function Dashboard() {
     return data || [];
   };
 
+  const fetchTodayMood = async () => {
+    const user = await getUser();
+    if (!user) return;
+
+    const { start, end } = getTodayIsoRange();
+
+    const { data, error } = await supabase
+      .from("mood_scores")
+      .select("id, mood_level, descripcion, fecha")
+      .eq("user_id", user.id)
+      .gte("fecha", start)
+      .lt("fecha", end)
+      .order("fecha", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.log("Error cargando estado de ánimo de hoy:", error);
+      return;
+    }
+
+    if (data) {
+      setMoodLevel(Number(data.mood_level));
+      setMoodReply(getMoodBriefReply(Number(data.mood_level)));
+      setMoodSavedToday(true);
+      setLastSavedMoodText(data.descripcion || getMoodText(Number(data.mood_level)));
+    } else {
+      setMoodSavedToday(false);
+      setLastSavedMoodText("");
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const {
@@ -662,36 +838,102 @@ function Dashboard() {
         await fetchProfile();
         await fetchEntries();
         await fetchConversations();
+        await fetchTodayMood();
       }
     };
 
     loadData();
   }, []);
 
-  const handleMoodChange = async (value) => {
+  const handleMoodChange = (value) => {
     const level = Number(value);
 
     setMoodLevel(level);
     setMoodReply(getMoodBriefReply(level));
+    setMoodSavedToday(false);
+    setLastSavedMoodText("");
+  };
 
+  const saveMoodScore = async ({ silent = false } = {}) => {
     const user = await getUser();
 
     if (!user) {
       showToast("Usuario no autenticado", "error");
-      return;
+      return false;
     }
 
-    const { error } = await supabase.from("mood_scores").insert([
-      {
-        user_id: user.id,
-        mood_level: level,
-        descripcion: getMoodText(level),
-      },
-    ]);
+    try {
+      const level = Number(moodLevel);
+      const moodText = getMoodText(level);
+      const { start, end } = getTodayIsoRange();
 
-    if (error) {
+      const { data: existingMood, error: findError } = await supabase
+        .from("mood_scores")
+        .select("id")
+        .eq("user_id", user.id)
+        .gte("fecha", start)
+        .lt("fecha", end)
+        .order("fecha", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (findError) {
+        console.log("No se pudo verificar el ánimo de hoy, se guardará uno nuevo:", findError);
+      }
+
+      if (!findError && existingMood?.id) {
+        const { error: updateError } = await supabase
+          .from("mood_scores")
+          .update({
+            mood_level: level,
+            descripcion: moodText,
+            fecha: new Date().toISOString(),
+          })
+          .eq("id", existingMood.id)
+          .eq("user_id", user.id);
+
+        if (updateError) {
+          console.log("Error actualizando estado de ánimo:", updateError);
+          showToast("No se pudo actualizar tu estado de ánimo", "error");
+          return false;
+        }
+
+        setMoodSavedToday(true);
+        setLastSavedMoodText(moodText);
+
+        if (!silent) {
+          showToast("Estado de ánimo actualizado correctamente", "success");
+        }
+
+        return true;
+      }
+
+      const { error: insertError } = await supabase.from("mood_scores").insert([
+        {
+          user_id: user.id,
+          mood_level: level,
+          descripcion: moodText,
+        },
+      ]);
+
+      if (insertError) {
+        console.log("Error guardando estado de ánimo:", insertError);
+        showToast("No se pudo guardar tu estado de ánimo", "error");
+        return false;
+      }
+
+      setMoodSavedToday(true);
+      setLastSavedMoodText(moodText);
+
+      if (!silent) {
+        showToast("Estado de ánimo guardado correctamente", "success");
+      }
+
+      return true;
+    } catch (error) {
       console.log("Error guardando estado de ánimo:", error);
-      showToast("No se pudo guardar tu estado de ánimo", "error");
+      showToast("Error guardando estado de ánimo", "error");
+      return false;
     }
   };
 
@@ -705,6 +947,12 @@ function Dashboard() {
 
     try {
       setLoading(true);
+
+      const savedMood = await saveMoodScore({ silent: true });
+
+      if (!savedMood) {
+        return;
+      }
 
       const moodText = getMoodText();
 
@@ -1365,6 +1613,360 @@ Haz un análisis útil, natural y personalizado.
     }
   };
 
+  const generateStatsPDF = async () => {
+    const user = await getUser();
+
+    if (!user) {
+      showToast("Usuario no autenticado", "error");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      showToast("Generando reporte PDF...", "info");
+
+      const { data: freshEntries, error: entriesError } = await supabase
+        .from("entries")
+        .select("titulo, contenido, fecha")
+        .eq("user_id", user.id)
+        .order("fecha", { ascending: false });
+
+      if (entriesError) {
+        console.log("Error cargando entradas para reporte:", entriesError);
+      }
+
+      const { data: freshMoods, error: moodsError } = await supabase
+        .from("mood_scores")
+        .select("mood_level, descripcion, fecha")
+        .eq("user_id", user.id)
+        .order("fecha", { ascending: false });
+
+      if (moodsError) {
+        console.log("Error cargando estados para reporte:", moodsError);
+      }
+
+      const { data: freshConversations, error: conversationsError } =
+        await supabase
+          .from("conversations")
+          .select("titulo, tipo, fecha")
+          .eq("user_id", user.id)
+          .order("fecha", { ascending: false });
+
+      if (conversationsError) {
+        console.log(
+          "Error cargando conversaciones para reporte:",
+          conversationsError
+        );
+      }
+
+      const entriesReport = freshEntries || [];
+      const moodsReport = freshMoods || [];
+      const conversationsReport = freshConversations || [];
+
+      const moodCounter = moodOptions.reduce((acc, mood) => {
+        acc[mood.label] = 0;
+        return acc;
+      }, {});
+
+      moodsReport.forEach((mood) => {
+        const found = moodOptions.find(
+          (option) => option.value === Number(mood.mood_level)
+        );
+
+        const label = found
+          ? found.label
+          : cleanMoodLabel(mood.descripcion || "No identificado");
+
+        moodCounter[label] = (moodCounter[label] || 0) + 1;
+      });
+
+      const mostFrequentMood = Object.entries(moodCounter)
+        .sort((a, b) => b[1] - a[1])
+        .find(([, quantity]) => quantity > 0);
+
+      const safeUserName = userName || "Usuario";
+
+      const moodSummaryText = Object.entries(moodCounter)
+        .map(([label, quantity]) => `${label}: ${quantity}`)
+        .join(", ");
+
+      const recentEntriesText =
+        entriesReport.length > 0
+          ? entriesReport
+              .slice(0, 6)
+              .map((entry, index) => {
+                const content = entry.contenido || "Sin contenido";
+                return `${index + 1}. ${entry.titulo || "Entrada"}: ${
+                  content.length > 180 ? `${content.substring(0, 180)}...` : content
+                }`;
+              })
+              .join("\n")
+          : "No hay entradas recientes registradas.";
+
+      let aiReportConclusion =
+        "No se pudo generar una conclusión automática con IA en este momento. Aun así, el reporte muestra estadísticas útiles para revisar la actividad emocional registrada en ARIA.";
+
+      try {
+        showToast("ARIA está preparando una conclusión para el reporte...", "info");
+
+        const aiCompletion = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Eres ARIA, una IA de diario emocional. Debes generar una conclusión y una recomendación breve para un reporte estadístico emocional. No hagas diagnósticos médicos ni psicológicos. No actúes como terapeuta clínico. Sé claro, humano, empático y práctico.",
+            },
+            {
+              role: "user",
+              content: `
+Nombre del usuario: ${safeUserName}
+
+Datos del reporte:
+- Total de entradas registradas: ${entriesReport.length}
+- Total de conversaciones creadas: ${conversationsReport.length}
+- Total de estados de ánimo registrados: ${moodsReport.length}
+- Estado de ánimo más frecuente: ${
+                mostFrequentMood
+                  ? `${mostFrequentMood[0]} (${mostFrequentMood[1]} registros)`
+                  : "Sin datos suficientes"
+              }
+
+Conteo por estado de ánimo:
+${moodSummaryText}
+
+Entradas recientes:
+${recentEntriesText}
+
+Genera exactamente dos apartados:
+Conclusión:
+[una conclusión breve de 3 a 5 líneas]
+
+Recomendación:
+[una recomendación breve, práctica y no clínica de 3 a 5 líneas]
+`,
+            },
+          ],
+          temperature: 0.65,
+          max_tokens: 360,
+        });
+
+        aiReportConclusion =
+          aiCompletion.choices[0]?.message?.content?.trim() ||
+          aiReportConclusion;
+      } catch (aiError) {
+        console.log("Error generando conclusión IA del reporte:", aiError);
+        showToast(
+          "El PDF se generará sin conclusión avanzada de IA",
+          "warning"
+        );
+      }
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const reportDate = new Date().toLocaleString();
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Reporte estadístico de ARIA", 14, 18);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.text(`Usuario: ${safeUserName}`, 14, 28);
+      doc.text(`Correo: ${profile?.email || user.email || "No disponible"}`, 14, 35);
+      doc.text(`Fecha de generación: ${reportDate}`, 14, 42);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Resumen general", 14, 54);
+
+      autoTable(doc, {
+        startY: 60,
+        head: [["Indicador", "Resultado"]],
+        body: [
+          ["Entradas registradas", String(entriesReport.length)],
+          ["Conversaciones creadas", String(conversationsReport.length)],
+          ["Estados de ánimo registrados", String(moodsReport.length)],
+          [
+            "Estado de ánimo más frecuente",
+            mostFrequentMood ? `${mostFrequentMood[0]} (${mostFrequentMood[1]})` : "Sin datos",
+          ],
+        ],
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [124, 58, 237] },
+      });
+
+      let nextY = (doc.lastAutoTable?.finalY || 90) + 10;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Conteo por estado de ánimo", 14, nextY);
+
+      autoTable(doc, {
+        startY: nextY + 6,
+        head: [["Estado", "Cantidad"]],
+        body: Object.entries(moodCounter).map(([label, quantity]) => [
+          label,
+          String(quantity),
+        ]),
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [236, 72, 153] },
+      });
+
+      nextY = (doc.lastAutoTable?.finalY || nextY + 30) + 10;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Últimos estados de ánimo", 14, nextY);
+
+      autoTable(doc, {
+        startY: nextY + 6,
+        head: [["No.", "Estado", "Fecha"]],
+        body:
+          moodsReport.length > 0
+            ? moodsReport.slice(0, 8).map((mood, index) => [
+                String(index + 1),
+                mood.descripcion || getMoodText(mood.mood_level),
+                formatDate(mood.fecha),
+              ])
+            : [["-", "Sin registros", "-"]],
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [14, 165, 233] },
+      });
+
+      nextY = (doc.lastAutoTable?.finalY || nextY + 30) + 10;
+
+      if (nextY > 235) {
+        doc.addPage();
+        nextY = 18;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Últimas entradas del diario", 14, nextY);
+
+      autoTable(doc, {
+        startY: nextY + 6,
+        head: [["No.", "Título", "Contenido", "Fecha"]],
+        body:
+          entriesReport.length > 0
+            ? entriesReport.slice(0, 6).map((entry, index) => [
+                String(index + 1),
+                entry.titulo || "Entrada",
+                entry.contenido && entry.contenido.length > 90
+                  ? `${entry.contenido.substring(0, 90)}...`
+                  : entry.contenido || "Sin contenido",
+                formatDate(entry.fecha),
+              ])
+            : [["-", "Sin entradas", "-", "-"]],
+        styles: { fontSize: 8.5, cellPadding: 3, overflow: "linebreak" },
+        headStyles: { fillColor: [249, 115, 22] },
+        columnStyles: {
+          0: { cellWidth: 12 },
+          1: { cellWidth: 42 },
+          2: { cellWidth: 82 },
+          3: { cellWidth: 42 },
+        },
+      });
+
+      nextY = (doc.lastAutoTable?.finalY || nextY + 40) + 10;
+
+      if (nextY > 235) {
+        doc.addPage();
+        nextY = 18;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Últimas conversaciones", 14, nextY);
+
+      autoTable(doc, {
+        startY: nextY + 6,
+        head: [["No.", "Título", "Tipo", "Fecha"]],
+        body:
+          conversationsReport.length > 0
+            ? conversationsReport.slice(0, 8).map((conversation, index) => [
+                String(index + 1),
+                conversation.titulo || "Conversación",
+                conversation.tipo || "chat",
+                formatDate(conversation.fecha),
+              ])
+            : [["-", "Sin conversaciones", "-", "-"]],
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [16, 185, 129] },
+      });
+
+      nextY = (doc.lastAutoTable?.finalY || nextY + 40) + 12;
+
+      if (nextY > 225) {
+        doc.addPage();
+        nextY = 18;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("Conclusión y recomendación generada por ARIA", 14, nextY);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      const aiConclusionLines = doc.splitTextToSize(
+        aiReportConclusion,
+        180
+      );
+
+      let textY = nextY + 8;
+
+      aiConclusionLines.forEach((line) => {
+        if (textY > 276) {
+          doc.addPage();
+          textY = 18;
+        }
+
+        doc.text(line, 14, textY);
+        textY += 5.4;
+      });
+
+      textY += 4;
+
+      if (textY > 270) {
+        doc.addPage();
+        textY = 18;
+      }
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.text(
+        "Nota: Esta conclusión es orientativa y no sustituye atención psicológica o médica profesional.",
+        14,
+        textY
+      );
+
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i += 1) {
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(
+          `ARIA - Reporte generado automáticamente | Página ${i} de ${pageCount}`,
+          14,
+          287
+        );
+      }
+
+      const fileName = `reporte-aria-${safeUserName
+        .toLowerCase()
+        .replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      doc.save(fileName);
+      showToast("Reporte PDF generado correctamente", "success");
+    } catch (error) {
+      console.log("Error generando reporte PDF:", error);
+      showToast("No se pudo generar el reporte PDF", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openLogoutModal = () => {
     setShowLogoutModal(true);
   };
@@ -1479,8 +2081,62 @@ Haz un análisis útil, natural y personalizado.
             background: #ddd6fe;
             border-radius: 999px;
           }
+
+
+          .aria-bg-orb {
+            position: fixed;
+            border-radius: 999px;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(2px);
+            opacity: .75;
+            animation: ariaFloat 8s ease-in-out infinite;
+          }
+
+          .aria-bg-orb-one {
+            width: 240px;
+            height: 240px;
+            left: -90px;
+            top: 80px;
+            background: radial-gradient(circle, rgba(124,58,237,.18), transparent 68%);
+          }
+
+          .aria-bg-orb-two {
+            width: 280px;
+            height: 280px;
+            right: -120px;
+            bottom: 120px;
+            background: radial-gradient(circle, rgba(236,72,153,.16), transparent 68%);
+            animation-delay: -3s;
+          }
+
+          @keyframes ariaFloat {
+            0%, 100% { transform: translate3d(0,0,0) scale(1); }
+            50% { transform: translate3d(0,-14px,0) scale(1.04); }
+          }
+
+          .aria-btn:active, .aria-ghost:active {
+            transform: translateY(0) scale(.985);
+          }
+
+          button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 3px solid rgba(124,58,237,.22);
+            outline-offset: 2px;
+          }
+
+          @media (max-width: 900px) {
+            .aria-bg-orb { display: none; }
+          }
+
+          .aria-btn:active,
+          .aria-ghost:active {
+            transform: scale(0.99);
+          }
         `}
       </style>
+
+      <div className="aria-bg-orb aria-bg-orb-one" />
+      <div className="aria-bg-orb aria-bg-orb-two" />
 
       {showLogoutModal && (
         <div style={styles.modalOverlay}>
@@ -1657,6 +2313,16 @@ Haz un análisis útil, natural y personalizado.
 
               <button
                 type="button"
+                className="aria-ghost"
+                onClick={generateStatsPDF}
+                style={styles.topActionButton}
+                disabled={loading}
+              >
+                {isSmall ? "PDF" : "Reporte PDF"}
+              </button>
+
+              <button
+                type="button"
                 onClick={openLogoutModal}
                 style={{
                   ...styles.logoutButton,
@@ -1672,19 +2338,9 @@ Haz un análisis útil, natural y personalizado.
           </header>
 
           {loading && (
-            <div
-              style={{
-                marginBottom: isMobile ? "12px" : "16px",
-                padding: "14px 16px",
-                borderRadius: "18px",
-                background: "#fff7ed",
-                border: "1px solid #fed7aa",
-                color: "#c2410c",
-                fontWeight: "850",
-                boxShadow: "0 10px 25px rgba(249,115,22,0.08)",
-              }}
-            >
-              ARIA está pensando...
+            <div style={styles.loadingCard}>
+              <span style={styles.loadingDot}></span>
+              <span>ARIA está procesando tu solicitud...</span>
             </div>
           )}
 
@@ -1714,15 +2370,7 @@ Haz un análisis útil, natural y personalizado.
                   o pedirle a ARIA que analice tu semana emocional.
                 </p>
 
-                <div
-                  style={{
-                    marginTop: isSmall ? "16px" : "22px",
-                    display: "flex",
-                    gap: "10px",
-                    flexWrap: "wrap",
-                    flexDirection: isSmall ? "column" : "row",
-                  }}
-                >
+                <div style={styles.heroActions}>
                   <button
                     className="aria-btn"
                     type="button"
@@ -1750,6 +2398,87 @@ Haz un análisis útil, natural y personalizado.
                     onClick={() => setActivePanel("global")}
                   >
                     Hablar con ARIA
+                  </button>
+
+                  <button
+                    className="aria-btn"
+                    type="button"
+                    style={{
+                      ...styles.reportButton,
+                      background: "rgba(255,255,255,0.92)",
+                      color: "#7c3aed",
+                      border: "1px solid rgba(255,255,255,0.55)",
+                    }}
+                    onClick={generateStatsPDF}
+                    disabled={loading}
+                  >
+                    Generar reporte PDF
+                  </button>
+                </div>
+              </div>
+
+              <div style={styles.reportHighlight}>
+                <div style={styles.reportIcon}>PDF</div>
+                <div>
+                  <h3
+                    style={{
+                      margin: "0 0 6px",
+                      color: "#111827",
+                      fontSize: isSmall ? "20px" : "22px",
+                      letterSpacing: "-0.6px",
+                    }}
+                  >
+                    Reporte emocional con conclusión de ARIA
+                  </h3>
+                  <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>
+                    Genera un PDF con tus estadísticas, estados de ánimo, entradas recientes y una recomendación personalizada de IA.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="aria-btn"
+                  style={{ ...styles.reportButton, justifySelf: isMobile ? "stretch" : "end" }}
+                  onClick={generateStatsPDF}
+                  disabled={loading}
+                >
+                  Generar reporte
+                </button>
+              </div>
+
+              <div style={styles.insightStrip}>
+                <div style={styles.insightCard}>
+                  <span style={styles.label}>{todayLabel}</span>
+                  <h3 style={{ margin: "12px 0 4px", color: "#111827" }}>
+                    {greetingText}, {userName}
+                  </h3>
+                  <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>
+                    ARIA está lista para escuchar tu día.
+                  </p>
+                </div>
+
+                <div style={styles.insightCard}>
+                  <span style={styles.label}>Actividad emocional</span>
+                  <h3 style={{ margin: "12px 0 4px", color: "#111827" }}>
+                    {activityScore}%
+                  </h3>
+                  <div style={styles.progressTrack}>
+                    <div style={styles.progressFill}></div>
+                  </div>
+                </div>
+
+                <div style={styles.insightCard}>
+                  <span style={styles.label}>Reporte inteligente</span>
+                  <p style={{ margin: "12px 0 12px", color: "#64748b", lineHeight: 1.6 }}>
+                    Genera un PDF con estadísticas y una recomendación de ARIA.
+                  </p>
+                  <button
+                    type="button"
+                    className="aria-ghost"
+                    style={{ ...styles.reportButton, width: "100%" }}
+                    onClick={generateStatsPDF}
+                    disabled={loading}
+                  >
+                    Crear reporte
                   </button>
                 </div>
               </div>
@@ -1844,6 +2573,17 @@ Haz un análisis útil, natural y personalizado.
                     onClick={() => setActivePanel("entry")}
                   >
                     Ver entradas
+                  </button>
+
+
+                  <button
+                    type="button"
+                    className="aria-ghost"
+                    style={styles.reportButton}
+                    onClick={generateStatsPDF}
+                    disabled={loading}
+                  >
+                    Reporte PDF
                   </button>
                 </div>
 
@@ -1983,14 +2723,53 @@ Haz un análisis útil, natural y personalizado.
                   </p>
                 </div>
 
-                <button
-                  className="aria-btn"
-                  style={{ ...styles.button, marginTop: "16px" }}
-                  onClick={createMoodConversation}
-                  disabled={loading}
+                <div
+                  style={{
+                    marginTop: "16px",
+                    display: "flex",
+                    gap: "10px",
+                    flexWrap: "wrap",
+                    flexDirection: isSmall ? "column" : "row",
+                  }}
                 >
-                  Iniciar conversación desde este ánimo
-                </button>
+                  <button
+                    className="aria-btn"
+                    style={{ ...styles.button }}
+                    onClick={() => saveMoodScore()}
+                    disabled={loading}
+                  >
+                    {moodSavedToday ? "Actualizar ánimo de hoy" : "Guardar estado de ánimo"}
+                  </button>
+
+                  <button
+                    className="aria-ghost"
+                    style={{
+                      ...styles.ghostButton,
+                      width: isMobile ? "100%" : "auto",
+                      color: "#7c3aed",
+                      border: "1px solid #ddd6fe",
+                      background: "#ffffff",
+                    }}
+                    onClick={createMoodConversation}
+                    disabled={loading}
+                  >
+                    Iniciar conversación desde este ánimo
+                  </button>
+                </div>
+
+                <p
+                  style={{
+                    margin: "12px 0 0",
+                    color: moodSavedToday ? "#059669" : "#64748b",
+                    fontSize: "13px",
+                    fontWeight: "750",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {moodSavedToday
+                    ? `Ánimo guardado hoy: ${lastSavedMoodText || getMoodText()}. Si cambias de opción, se actualizará el registro del día y no se duplicará.`
+                    : "Seleccionar una emoción solo cambia la vista. Presiona guardar para registrar tu ánimo del día."}
+                </p>
               </div>
             </section>
           )}
@@ -2308,6 +3087,16 @@ Haz un análisis útil, natural y personalizado.
                   <p style={{ color: "#64748b", fontSize: "14px" }}>
                     Ideas para analizar tu diario sin pensar demasiado.
                   </p>
+
+                  <button
+                    type="button"
+                    className="aria-btn"
+                    style={{ ...styles.reportButton, marginBottom: "12px" }}
+                    onClick={generateStatsPDF}
+                    disabled={loading}
+                  >
+                    Generar reporte PDF
+                  </button>
 
                   {quickGlobalPrompts.map((prompt) => (
                     <button
